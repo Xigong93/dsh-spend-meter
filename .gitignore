@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.DS_Store
+
+# 本地运行时数据（预算配置不随仓库走）
+budget.json
+data/

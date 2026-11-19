@@ -1,0 +1,9 @@
+# dsh-spend-meter 的 bundle patch：只插入一条插件行。
+# 想调价目 / 节假日，在这里给这条行加 config（可选字段见 index.js 顶部注释）：
+#   - id: spend-meter
+#     name: dsh-spend-meter
+#     config:
+#       holidays: ['2026-10-01', '2026-10-02']
+- insert:
+    - id: spend-meter
+      name: dsh-spend-meter

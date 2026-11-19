@@ -1,0 +1,54 @@
+{
+  "name": "dsh-spend-meter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DSH plugin: sidebar balance, today spend, input/output tokens, peak and off-peak windows, per-session breakdown and an optional daily budget",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  },
+  "license": "MIT",
+  "author": "Xigong",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "deepseek",
+    "spend",
+    "budget",
+    "usage"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xigong93/dsh-spend-meter.git"
+  },
+  "homepage": "https://github.com/Xigong93/dsh-spend-meter#readme",
+  "bugs": {
+    "url": "https://github.com/Xigong93/dsh-spend-meter/issues"
+  }
+}

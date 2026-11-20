@@ -541,6 +541,14 @@ export function apply(ctx, rawConfig) {
     }
   }
 
+  /** 预算拦下请求时写进聊天错误行的那句话。 */
+  function budgetFailureMessage(status) {
+    const spent = `${status.symbol}${status.spent.toFixed(2)}`
+    const limit = `${status.symbol}${status.limit.toFixed(2)}`
+    return `今日预算已用完（${spent} / ${limit}），DeepSeek 模型调用已暂停，明天 0 点（北京时间）自动恢复。`
+      + '可以在侧栏「余额与用量」里调高每日上限或关闭预算。'
+  }
+
   /** 只有 DeepSeek 的模型会被预算闸门挡住。 */
   function isDeepSeekProvider(provider) {
     return String(provider ?? '').toLowerCase().includes('deepseek')
@@ -691,16 +699,29 @@ export function apply(ctx, rawConfig) {
     ingest(String(session?.id ?? ''), event)
   }), 'spend-meter: 增量记账')
 
-  // 预算闸门：当天花费到顶后，DeepSeek 的模型请求在进入模型前就被拒掉。
-  // 只拦 DeepSeek（provider 名里带 deepseek 的），别的 provider 照常可用。
-  ctx.effect(() => ctx.on('agent/pre-step', async (payload, next) => {
-    const decision = await next()
-    if (!budget.enabled) return decision
-    if (decision?.kind !== 'enter') return decision
-    if (!isDeepSeekProvider(payload?.modelSelection?.provider)) return decision
-    if (!budgetStatus(lastCurrency).blocked) return decision
+  // 预算闸门：当天花费到顶后，DeepSeek 的模型请求不发出去，而是以一次「可见的失败」结束。
+  //
+  // 为什么不用 agent/pre-step 的 reject：那条路会把 turn 收成 blocked，界面上只显示
+  // 一句「完成」，用户完全不知道被预算拦了（实测就是这个反馈）。这里改成在
+  // llm/stream 这一层短路：返回一个只带 finish{kind:'error', failure} 的流，
+  // 走宿主自己的失败路径 —— 聊天里会出现一行错误提示，且不会真的发起网络请求。
+  // failure.code 故意用非网络错误码，llm-retry 的 retryableCodes 不含它，不会重试。
+  ctx.effect(() => ctx.on('llm/stream', (options, next) => {
+    if (!budget.enabled) return next()
+    if (!isDeepSeekProvider(options?.provider)) return next()
+    const status = budgetStatus(lastCurrency)
+    if (!status.blocked) return next()
     blockedCount += 1
-    return { kind: 'reject' }
+    const message = budgetFailureMessage(status)
+    return (async function* blocked() {
+      yield {
+        type: 'finish',
+        reason: {
+          kind: 'error',
+          failure: { message, code: 'budget-exceeded' },
+        },
+      }
+    })()
   }), 'spend-meter: 预算闸门')
 
   // 定期补扫 + 跨零点清账。定时器由 effect 自己回收，不依赖 timer 服务。

@@ -1,6 +1,6 @@
 {
   "name": "dsh-spend-meter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "DSH plugin: sidebar balance, today spend, input/output tokens, peak and off-peak windows, per-session breakdown and an optional daily budget",
   "type": "module",
